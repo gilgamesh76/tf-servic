@@ -1,0 +1,31 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Docker@2
+  displayName: Build and push Docker image
+  inputs:
+    containerRegistry: 'myregistry'
+    repository: 'myrepo/myimage'
+    command: 'buildAndPush'
+    Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+    tags: 'latest'
+- task: DotNetCoreCLI@2
+  displayName: Run unit tests
+  inputs:
+    command: 'test'
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+- task: Kubernetes@1
+  displayName: Apply Kubernetes deployment configuration
+  inputs:
+    connectionType: 'Azure Resource Manager'
+    azureSubscriptionEndpoint: 'my-azure-subscription'
+    azureResourceGroup: 'my-aks-resource-group'
+    kubernetesCluster: 'my-aks-cluster'
+    command: 'apply'
+    arguments: '-f $(System.DefaultWorkingDirectory)/kubernetes/ecomm-config-service/deployment.yaml --namespace mynamespace --set DOCKER_REGISTRY=$(myregistry),TAG=$(tag)'
+  condition: succeeded()

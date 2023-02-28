@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+spec:
+  selector:
+    matchLabels:
+      app: config-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: config-service
+    spec:
+      containers:
+      - name: config-service
+        image: ${DOCKER_REGISTRY-}ecomm/configservice:${TAG}
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: STORAGE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: storage-account-secret
+              key: storage-account-name
+        - name: QUEUE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: config-service-config
+              key: queue-name
+        - name: TABLE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: config-service-config
+              key: table-name
+        imagePullPolicy: Always
